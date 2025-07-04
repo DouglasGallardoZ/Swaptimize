@@ -49,8 +49,6 @@ Una vez instalado o configurado se debe reiniciar el sistema para que apliquen l
 sudo systemctl status manage-swap.service  # Verifica estado
 ```
 
-El servicio 
-
 ---
 
 ### 🪵 Logs
