@@ -1,63 +1,74 @@
-### Ajuste del Servicio Systemd
+## 🧠 Manage-Swap (Gestión dinámica de memoria swap)
 
-Modifica el archivo del servicio Systemd para reflejar estos cambios:
+**Manage-Swap** es un servicio de sistema para Linux que permite gestionar archivos de swap dinámicamente según el uso de memoria y el espacio disponible en disco. Ideal para entornos de ciencia de datos, desarrollo backend o sistemas con recursos limitados donde se requiere estabilidad bajo cargas variables.
 
-```ini
-sudo nano /etc/systemd/system/manage-swap.service
+**Nota: Actualmente trabaja unicamente en sistemas de archivo ext4.**
+
+---
+
+### 🚀 Instalación
+
+Ejecuta el script de instalación:
+
+```bash
+sudo ./install.sh
 ```
 
-Contenido del archivo de servicio:
+Este script:
 
-```ini
-[Unit]
-Description=Manage Swap Files Dynamically
-After=network.target
+- Copia el script principal `manage_swap.sh` a `/usr/local/bin/`
+- Instala el servicio `systemd` como `manage-swap.service`
+- Copia la plantilla de configuración a `/etc/manage_swap.env`
+- Recarga `systemd` y habilita el servicio para autoarranque
 
-[Service]
-Type=oneshot
-ExecStart=/usr/local/bin/manage_swap.sh start
-ExecStop=/usr/local/bin/manage_swap.sh stop
-RemainAfterExit=true
+> ✅ La instalación requiere permisos de superusuario.
 
-[Install]
-WantedBy=multi-user.target
+---
+
+### ⚙️ Configuración vía `.env`
+
+El script lee variables opcionales desde `/etc/manage_swap.env` si está presente. Puedes personalizar el comportamiento sin modificar el código fuente:
+
+```dotenv
+# /etc/manage_swap.env
+SWAP_SLEEP_INTERVAL=30          # Intervalo de chequeo (segundos)
+SWAP_THRESHOLD_HIGH=85          # % de uso de swap que crea nuevo archivo
+SWAP_THRESHOLD_LOW=40           # % de uso que permite remover swap
+SWAP_SIZE=2G                    # Tamaño de cada archivo de swap
+MAX_SWAP_FILES=3                # Límite total de archivos swap
 ```
 
-### Implementación
+> Si alguna variable no está definida, se aplica un valor por defecto seguro.
 
-1. **Guardar y Configurar el Script**:
-   
-   ```bash
-   sudo nano /usr/local/bin/manage_swap.sh
-   ```
+---
 
-   Pegar el script ajustado y guardar los cambios.
+### 🔁 Uso general
 
-2. **Dar Permisos de Ejecución**:
-   
-   ```bash
-   sudo chmod +x /usr/local/bin/manage_swap.sh
-   ```
+Una vez instalado o configurado se debe reiniciar el sistema para que apliquen los cambios:
 
-3. **Crear o Modificar el Servicio Systemd**:
-   
-   ```bash
-   sudo nano /etc/systemd/system/manage-swap.service
-   ```
+```bash
+sudo systemctl status manage-swap.service  # Verifica estado
+```
 
-   Pegar el contenido del archivo de servicio y guardar los cambios.
+El servicio 
 
-4. **Recargar Systemd y Habilitar el Servicio**:
-   
-   ```bash
-   sudo systemctl daemon-reload
-   sudo systemctl enable manage-swap.service
-   ```
+---
 
-5. **Verificar el Estado del Servicio**:
-   
-   ```bash
-   sudo systemctl status manage-swap.service
-   ```
+### 🪵 Logs
 
-Con estos ajustes, el script y el servicio Systemd deberían manejar correctamente la gestión de archivos de swap y asegurar que se limpien todos los archivos al reiniciar o detener el servicio.
+Todas las operaciones se registran en:
+
+```bash
+/var/log/manage_swap.log
+```
+
+---
+
+### 🧩 Compatibilidad
+
+Tested en:
+
+- Ubuntu 22.04 o superiores, Fedora Workstation (ext4).
+- Compatible unicamente con sistemas de archivo ext4.
+
+---
