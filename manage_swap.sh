@@ -6,13 +6,13 @@ if [ -f "$ENV_FILE" ]; then
 fi
 # Configuración
 SWAP_DIR="/swapfiles"
-SWAP_SIZE="${SWAP_SIZE:-4G}"
-SWAP_SIZE_BYTES=$(( ${SWAP_SIZE_BYTES:-$((4 * 1024 * 1024))} ))  # 4GB en bytes
+SWAP_SIZE="4G" 
+SWAP_SIZE_BYTES=$((4 * 1024 * 1024)) # 4GB en bytes
 MAX_SWAP_FILES="${MAX_SWAP_FILES:-4}"
 SWAP_THRESHOLD_HIGH="${SWAP_THRESHOLD_HIGH:-85}"
 SWAP_THRESHOLD_LOW="${SWAP_THRESHOLD_LOW:-40}"
 SLEEP_INTERVAL="${SWAP_SLEEP_INTERVAL:-30}"
-MIN_FREE_SPACE=$(( ${MIN_FREE_SPACE:-$((5 * 1024 * 1024))} ))  # 5GB en bytes
+MIN_FREE_SPACE=$((5 * 1024 * 1024)) # 5GB en bytes
 
 # Crear el directorio de archivos de swap si no existe
 mkdir -p $SWAP_DIR

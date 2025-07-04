@@ -34,8 +34,7 @@ El script lee variables opcionales desde `/etc/manage_swap.env` si está present
 SWAP_SLEEP_INTERVAL=30          # Intervalo de chequeo (segundos)
 SWAP_THRESHOLD_HIGH=85          # % de uso de swap que crea nuevo archivo
 SWAP_THRESHOLD_LOW=40           # % de uso que permite remover swap
-SWAP_SIZE=2G                    # Tamaño de cada archivo de swap
-MAX_SWAP_FILES=3                # Límite total de archivos swap
+MAX_SWAP_FILES=4                # Límite total de archivos swap
 ```
 
 > Si alguna variable no está definida, se aplica un valor por defecto seguro.
