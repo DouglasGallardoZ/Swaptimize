@@ -1,0 +1,9 @@
+/var/log/manage_swap.log {
+    daily
+    rotate 7
+    compress
+    missingok
+    notifempty
+    create 644 root root
+    su root root
+}

@@ -51,6 +51,10 @@ sudo systemctl status manage-swap.service  # Verifica estado
 
 ---
 
+Claro, Douglas. Aquí tienes la sección de **Logs** actualizada para incorporar el uso de `logrotate` y controlar el crecimiento del archivo:
+
+---
+
 ### 🪵 Logs
 
 Todas las operaciones se registran en:
@@ -58,6 +62,37 @@ Todas las operaciones se registran en:
 ```bash
 /var/log/manage_swap.log
 ```
+
+Para evitar que este archivo crezca indefinidamente, se incluye una política de rotación de logs mediante **logrotate**:
+
+- Rota el log diariamente.
+- Guarda los últimos 7 días (`rotate 7`).
+- Comprime versiones anteriores para ahorro de espacio.
+- Evita errores si el archivo está vacío o ha sido eliminado.
+- Crea archivos nuevos con permisos seguros (644, root).
+
+El archivo de configuración correspondiente se instala como:
+
+```bash
+/etc/logrotate.d/manage_swap
+```
+
+Ejemplo de entrada incluida:
+
+```conf
+/var/log/manage_swap.log {
+    daily
+    rotate 7
+    compress
+    missingok
+    notifempty
+    create 644 root root
+    su root root
+}
+```
+
+> 💡 Puedes forzar una rotación manual con:  
+> `sudo logrotate -f /etc/logrotate.d/manage_swap`
 
 ---
 
