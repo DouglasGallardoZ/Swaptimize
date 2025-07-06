@@ -3,7 +3,6 @@ package main
 import (
 	"Swaptimize/internal/swap"
     "Swaptimize/internal/monitor"
-    "fmt"
     "log"
     "os"
     "os/signal"
@@ -12,7 +11,7 @@ import (
     "strconv"
 
     "github.com/joho/godotenv"
-    "github.com/shirou/gopsutil/v3/mem"
+    
 )
 
 func main() {
@@ -20,7 +19,7 @@ func main() {
     _ = godotenv.Load("/etc/manage_swap.env")
 
     // Leer configuración desde entorno o usar valores por defecto
-    intervalSec := getEnvInt("SWAP_SLEEP_INTERVAL", 30)
+    intervalSec := getEnvInt("SWAP_SLEEP_INTERVAL", 10)
     thresholdHigh := getEnvInt("SWAP_THRESHOLD_HIGH", 85)
     thresholdLow := getEnvInt("SWAP_THRESHOLD_LOW", 40)
     maxSwapFiles := getEnvInt("MAX_SWAP_FILES", 4)
@@ -46,14 +45,14 @@ func main() {
             log.Println("🧹 Swaptimize detenido correctamente.")
             return
         case <-ticker.C:
-            runCheck(thresholdHigh, thresholdLow)
+            runCheck(thresholdHigh, thresholdLow, swapSize, maxSwapFiles)
         }
     }
 }
 
 var swapIDCounter int = 1
 
-func runCheck(high int, low int) {
+func runCheck(thresholdHigh int, thresholdLow int, swapSize int, maxSwapFiles int) {
     metrics, err := monitor.GetMetrics()
     if err != nil {
         log.Printf("⚠️ Error al obtener métricas: %v", err)
