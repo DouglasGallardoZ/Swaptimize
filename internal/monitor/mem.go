@@ -10,6 +10,7 @@ type SystemMetrics struct {
     MemPercent float64 // Porcentaje RAM usada
     SwapPercent int    // Porcentaje swap usada
     DiskFreeMB uint64  // Espacio libre en disco (MB)
+    TotalSwap int      // Capacidad total de Swap
 }
 
 // Extrae métricas actuales del sistema
@@ -29,14 +30,15 @@ func GetMetrics() (*SystemMetrics, error) {
 		return nil, err
 	}
 
-    totalSwap := 0
+    totalSwapPercent := 0
     if swapStats.Total > 0 {
-        totalSwap = int((swapStats.Used * 100) / swapStats.Total)
+        totalSwapPercent = int((swapStats.Used * 100) / swapStats.Total)
     }
 
 	return &SystemMetrics{
 		MemPercent:   v.UsedPercent,
-		SwapPercent:  totalSwap,
+		SwapPercent:  totalSwapPercent,
 		DiskFreeMB:   d.Free / (1024 * 1024),
+        TotalSwap:    int(swapStats.Total),
 	}, nil
 }

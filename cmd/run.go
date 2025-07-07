@@ -42,7 +42,7 @@ var runCmd = &cobra.Command{
 
         // Existe swap inicial
         metricsAux, err := monitor.GetMetrics()
-        hasSwap := metricsAux.SwapPercent
+        hasSwap := metricsAux.TotalSwap
 
         counter := 1
         if hasSwap == 0 {
