@@ -81,8 +81,6 @@ var runCmd = &cobra.Command{
                     log.Println("⚠️ Sistema sin swap activa. Swaptimize iniciará con swap dinámica.")
                 }
 
-                log.Printf("isBootCold %t", isBootCold)
-
                 // Crear swap si el uso ≥ umbral alto o es arranque en frío
                 if metrics.SwapPercent >= settings.ThresholdHigh || isBootCold {
                     if swapIDCounter <= settings.MaxSwapFiles {
@@ -95,8 +93,7 @@ var runCmd = &cobra.Command{
                         log.Println("⛔ Máximo de archivos swap alcanzado.")
                     }
                 }
-
-                log.Printf("minSwapActive %d", minSwapActive)
+                
                 // Eliminar swap si uso ≤ umbral bajo y hay más de los mínimos activos
                 if metrics.SwapPercent <= settings.ThresholdLow && swapIDCounter > minSwapActive {
                     swapIDCounter--
