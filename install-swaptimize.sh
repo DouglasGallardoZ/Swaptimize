@@ -14,7 +14,7 @@ sudo cp swaptimize /usr/local/bin/swaptimize
 sudo chmod +x /usr/local/bin/swaptimize
 
 # 3. Crear archivo .env si no existe
-ENV_PATH="/etc/manage_swap.env"
+ENV_PATH="/etc/swaptimize.env"
 if [ ! -f "$ENV_PATH" ]; then
     echo "🧬 Creando $ENV_PATH con valores por defecto..."
     sudo tee "$ENV_PATH" > /dev/null <<EOF
@@ -38,7 +38,7 @@ After=network.target
 
 [Service]
 ExecStart=/usr/local/bin/swaptimize run
-EnvironmentFile=/etc/manage_swap.env
+EnvironmentFile=/etc/swaptimize.env
 Restart=always
 RestartSec=5
 User=root

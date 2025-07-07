@@ -52,7 +52,7 @@ Este script:
 
 - Copia `manage_swap.sh` a `/usr/local/bin/`
 - Instala el servicio `systemd` en `/etc/systemd/system/manage-swap.service`
-- Copia la plantilla de entorno a `/etc/manage_swap.env` (si no existe)
+- Copia la plantilla de entorno a `/etc/swaptimize.env` (si no existe)
 - Configura rotación de logs con `logrotate`
 - Recarga `systemd` y habilita el servicio al arranque
 
@@ -63,7 +63,7 @@ Este script:
 Puedes personalizar parámetros creando/modificando el archivo:
 
 ```dotenv
-# /etc/manage_swap.env
+# /etc/swaptimize.env
 SWAP_SLEEP_INTERVAL=30           # Intervalo entre inspecciones (segundos)
 SWAP_THRESHOLD_HIGH=85           # % uso de swap que activa creación
 SWAP_THRESHOLD_LOW=40            # % uso para permitir eliminación
@@ -75,7 +75,7 @@ MAX_SWAP_FILES=4                 # Límite de archivos simultáneos
 También puedes usar la plantilla de ejemplo:
 
 ```bash
-sudo cp config/manage_swap.env /etc/manage_swap.env
+sudo cp config/manage_swap.env /etc/swaptimize.env
 ```
 
 ---

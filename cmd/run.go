@@ -21,7 +21,7 @@ var runCmd = &cobra.Command{
         log.Println("🔄 Swaptimize iniciado")
 
         // Cargar configuración desde archivo .env
-        settings, err := config.LoadSettings("/etc/manage_swap.env")
+        settings, err := config.LoadSettings("/etc/swaptimize.env")
         if err != nil {
             log.Fatalf("❌ Error al cargar configuración: %v", err)
         }

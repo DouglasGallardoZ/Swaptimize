@@ -18,7 +18,7 @@ echo "📁 Eliminando binario en /usr/local/bin/"
 sudo rm -f /usr/local/bin/swaptimize
 
 # 4. Eliminar archivo de configuración
-ENV_PATH="/etc/manage_swap.env"
+ENV_PATH="/etc/swaptimize.env"
 if [ -f "$ENV_PATH" ]; then
     read -p "❓ ¿Deseas eliminar también la configuración $ENV_PATH? [s/N]: " confirm
     if [[ "$confirm" =~ ^[sS]$ ]]; then

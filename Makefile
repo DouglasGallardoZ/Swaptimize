@@ -1,7 +1,7 @@
 # Variables
 BIN_NAME = swaptimize
 SRC = ./main.go
-ENV_PATH = /etc/manage_swap.env
+ENV_PATH = /etc/swaptimize.env
 SERVICE_PATH = /etc/systemd/system/swaptimize.service
 
 .PHONY: all build install uninstall clean service env
@@ -44,18 +44,17 @@ service:
 env:
 	@echo "📦 Validando archivo $(ENV_PATH)..."
 	@if [ ! -f $(ENV_PATH) ]; then \
-        echo "🧬 Creando archivo con valores por defecto..."; \
-        sudo tee $(ENV_PATH) > /dev/null <<EOF \
-SWAP_SLEEP_INTERVAL=30 \
-SWAP_EMERGENCY_INTERVAL=10 \
-SWAP_THRESHOLD_HIGH=85 \
-SWAP_THRESHOLD_LOW=40 \
-SWAP_SIZE=4096 \
-MAX_SWAP_FILES=4 \
-EOF \
-    else \
-        echo "✔️ Archivo ya existe."; \
-    fi
+		echo "🧬 Creando archivo con valores por defecto..."; \
+		echo "SWAP_SLEEP_INTERVAL=30"       | sudo tee -a $(ENV_PATH); \
+		echo "SWAP_EMERGENCY_INTERVAL=10"  | sudo tee -a $(ENV_PATH); \
+		echo "SWAP_THRESHOLD_HIGH=85"      | sudo tee -a $(ENV_PATH); \
+		echo "SWAP_THRESHOLD_LOW=40"       | sudo tee -a $(ENV_PATH); \
+		echo "SWAP_SIZE=4096"              | sudo tee -a $(ENV_PATH); \
+		echo "MAX_SWAP_FILES=4"            | sudo tee -a $(ENV_PATH); \
+	else \
+		echo "✔️ Archivo ya existe."; \
+	fi
+
 
 # Elimina binario, servicio y configuración
 uninstall:
