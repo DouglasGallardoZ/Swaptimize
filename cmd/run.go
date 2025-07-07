@@ -32,14 +32,22 @@ var runCmd = &cobra.Command{
         swapIDCounter := 1
 
         // Limpiar archivos swap residuales al arrancar
-        initialMetrics, err := monitor.GetMetrics()
         hasSwap := true
         if IsSystemBootRecent() {
             swap.CleanUpSwapFilesOnStartup()
+            initialMetrics, err := monitor.GetMetrics()
+            if err != nil {
+                log.Fatalf("❌ Error al obtener métricas iniciales: %v", err)
+            }
             hasSwap = initialMetrics.TotalSwap > 0
         } else {
             log.Println("🔁 Reinicio del servicio detectado — preservando swap activa.")
             swapIDCounter, err = swap.CountActiveSwapFiles()
+            
+            if err != nil {
+                log.Fatalf("❌ Error al contar archivos swap: %v", err)
+            }
+            
             swapIDCounter++
         }
 
@@ -93,7 +101,7 @@ var runCmd = &cobra.Command{
                         log.Println("⛔ Máximo de archivos swap alcanzado.")
                     }
                 }
-                
+
                 // Eliminar swap si uso ≤ umbral bajo y hay más de los mínimos activos
                 if metrics.SwapPercent <= settings.ThresholdLow && swapIDCounter > minSwapActive {
                     swapIDCounter--
