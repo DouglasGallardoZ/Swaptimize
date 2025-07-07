@@ -50,8 +50,8 @@ var runCmd = &cobra.Command{
                 if err != nil {
                     log.Printf("⚠️ Error al obtener métricas: %v", err)
                 } else {
-                    log.Printf("📊 RAM: %.2f%% | Swap: %d%% | Disco libre: %dMB",
-                        metrics.MemPercent, metrics.SwapPercent, metrics.DiskFreeMB)
+                    //log.Printf("📊 RAM: %.2f%% | Swap: %d%% | Disco libre: %dMB",
+                    //    metrics.MemPercent, metrics.SwapPercent, metrics.DiskFreeMB)
 
                     // Crear nuevo swap si uso ≥ umbral alto y no se ha superado el máximo
                     if metrics.SwapPercent >= settings.ThresholdHigh {
