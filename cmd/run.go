@@ -28,11 +28,19 @@ var runCmd = &cobra.Command{
             log.Fatalf("❌ Error al cargar configuración: %v", err)
         }
 
+        // Estado inicial
+        swapIDCounter := 1
+
         // Limpiar archivos swap residuales al arrancar
+        initialMetrics, err := monitor.GetMetrics()
+        hasSwap := true
         if IsSystemBootRecent() {
             swap.CleanUpSwapFilesOnStartup()
+            hasSwap = initialMetrics.TotalSwap > 0
         } else {
             log.Println("🔁 Reinicio del servicio detectado — preservando swap activa.")
+            swapIDCounter, err = swap.CountActiveSwapFiles()
+            swapIDCounter++
         }
 
         // Preparar señal de interrupción
@@ -42,14 +50,10 @@ var runCmd = &cobra.Command{
         // Intervalos de chequeo
         defaultInterval := time.Duration(settings.SleepInterval) * time.Second
         dynamicInterval := defaultInterval
-
-        // Estado inicial
-        swapIDCounter := 1
-        initialMetrics, err := monitor.GetMetrics()
+        
         if err != nil {
             log.Fatalf("❌ Error al obtener métricas iniciales: %v", err)
         }
-        hasSwap := initialMetrics.TotalSwap > 0
 
         // Mínimo swap activo permitido (protege la swap inicial)
         minSwapActive := 1
@@ -77,6 +81,8 @@ var runCmd = &cobra.Command{
                     log.Println("⚠️ Sistema sin swap activa. Swaptimize iniciará con swap dinámica.")
                 }
 
+                log.Printf("isBootCold %t", isBootCold)
+
                 // Crear swap si el uso ≥ umbral alto o es arranque en frío
                 if metrics.SwapPercent >= settings.ThresholdHigh || isBootCold {
                     if swapIDCounter <= settings.MaxSwapFiles {
@@ -90,6 +96,7 @@ var runCmd = &cobra.Command{
                     }
                 }
 
+                log.Printf("minSwapActive %d", minSwapActive)
                 // Eliminar swap si uso ≤ umbral bajo y hay más de los mínimos activos
                 if metrics.SwapPercent <= settings.ThresholdLow && swapIDCounter > minSwapActive {
                     swapIDCounter--

@@ -6,6 +6,7 @@ import (
     "os"
     "os/exec"
     "path/filepath"
+    "strings"
 )
 
 // Ruta base para los archivos swap (puede hacerse configurable)
@@ -80,4 +81,21 @@ func CleanUpSwapFilesOnStartup() {
             log.Printf("⚠️ No se pudo eliminar archivo: %v\n", err)
         }
     }
+}
+
+// Devuelve el número de archivos swap creados por Swaptimize
+func CountActiveSwapFiles() (int, error) {
+    files, err := filepath.Glob(filepath.Join(swapDir, "swap-*"))
+    if err != nil {
+        return 0, err
+    }
+
+    count := 0
+    for _, file := range files {
+        if strings.HasPrefix(file, swapDir+"/swap-") {
+            count++
+        }
+    }
+
+    return count, nil
 }
