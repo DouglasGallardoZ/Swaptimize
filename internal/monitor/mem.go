@@ -10,7 +10,8 @@ type SystemMetrics struct {
     MemPercent float64 // Porcentaje RAM usada
     SwapPercent int    // Porcentaje swap usada
     DiskFreeMB uint64  // Espacio libre en disco (MB)
-    TotalSwap int      // Capacidad total de Swap
+    TotalSwap int      // Capacidad total de swap en bytes. Si es 0, no hay swap activa.
+
 }
 
 // Extrae métricas actuales del sistema
