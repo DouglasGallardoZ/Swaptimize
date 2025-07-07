@@ -94,6 +94,12 @@ Esto:
 - Te pregunta si quieres borrar el archivo `.env`
 
 ---
+### 📝 Licencia
+
+Swaptimize está publicado bajo la Licencia MIT.  
+Consulta el archivo [LICENSE](./LICENSE) para más detalles.
+
+---
 
 ### 📬 Contribuciones
 
