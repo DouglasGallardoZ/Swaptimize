@@ -40,6 +40,15 @@ var runCmd = &cobra.Command{
         // Estado de archivos swap
         swapIDCounter := 1
 
+        // Existe swap inicial
+        metricsAux, err := monitor.GetMetrics()
+        hasSwap := metricsAux.SwapPercent
+
+        counter := 1
+        if hasSwap == 0 {
+            counter = 2
+        }
+
         for {
             select {
             case <-ctx.Done():
@@ -54,7 +63,7 @@ var runCmd = &cobra.Command{
                     //    metrics.MemPercent, metrics.SwapPercent, metrics.DiskFreeMB)
 
                     // Crear nuevo swap si uso ≥ umbral alto y no se ha superado el máximo
-                    if metrics.SwapPercent >= settings.ThresholdHigh {
+                    if metrics.SwapPercent >= settings.ThresholdHigh || (hasSwap == 0 && swapIDCounter == 1) {
                         if swapIDCounter <= settings.MaxSwapFiles {
                             if err := swap.CreateSwapFile(swapIDCounter, settings.SwapSizeMB); err != nil {
                                 log.Printf("❌ Error al crear swap: %v", err)
@@ -65,9 +74,9 @@ var runCmd = &cobra.Command{
                             log.Println("⛔ Máximo de archivos swap alcanzado.")
                         }
                     }
-
+                    
                     // Eliminar swap si uso ≤ umbral bajo y hay al menos uno activado
-                    if metrics.SwapPercent <= settings.ThresholdLow && swapIDCounter > 1 {
+                    if metrics.SwapPercent <= settings.ThresholdLow && swapIDCounter > counter {
                         swapIDCounter--
                         if err := swap.RemoveSwapFile(swapIDCounter); err != nil {
                             log.Printf("❌ Error al eliminar swap: %v", err)

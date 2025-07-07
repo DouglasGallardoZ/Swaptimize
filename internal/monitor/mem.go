@@ -29,9 +29,14 @@ func GetMetrics() (*SystemMetrics, error) {
 		return nil, err
 	}
 
+    totalSwap := 0
+    if swapStats.Total > 0 {
+        totalSwap = int((swapStats.Used * 100) / swapStats.Total)
+    }
+
 	return &SystemMetrics{
 		MemPercent:   v.UsedPercent,
-		SwapPercent:  int((swapStats.Used * 100) / swapStats.Total),
+		SwapPercent:  totalSwap,
 		DiskFreeMB:   d.Free / (1024 * 1024),
 	}, nil
 }
