@@ -15,7 +15,7 @@ rule_files:
 scrape_configs:
   - job_name: 'swaptimize'
     static_configs:
-      - targets: ['host.docker.internal:9100']  # Swaptimize metrics endpoint
+      - targets: ['192.168.1.14:9100']  # Swaptimize metrics endpoint (Host IP)
     scrape_interval: 30s
     scrape_timeout: 10s
     metrics_path: '/metrics'
