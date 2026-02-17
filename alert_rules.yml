@@ -1,0 +1,83 @@
+groups:
+  - name: swaptimize_alerts
+    interval: 30s
+    rules:
+      # High swap usage
+      - alert: HighSwapUsage
+        expr: swaptimize_swap_usage_percent > 80
+        for: 5m
+        labels:
+          severity: "warning"
+        annotations:
+          summary: "High swap usage detected"
+          description: "Swap usage is {{ $value }}% on swaptimize daemon"
+
+      # Critical swap usage
+      - alert: CriticalSwapUsage
+        expr: swaptimize_swap_usage_percent > 95
+        for: 1m
+        labels:
+          severity: "critical"
+        annotations:
+          summary: "CRITICAL: Swap overflow imminent"
+          description: "Swap usage is {{ $value }}% - system may freeze!"
+
+      # High memory pressure
+      - alert: HighMemoryPressure
+        expr: swaptimize_psi_some_avg60 > 50
+        for: 5m
+        labels:
+          severity: "warning"
+        annotations:
+          summary: "High memory pressure detected"
+          description: "PSI some metric is {{ $value }}% - memory shortage"
+
+      # Daemon errors
+      - alert: SwaptimizeErrors
+        expr: rate(swaptimize_errors_total[5m]) > 0
+        for: 5m
+        labels:
+          severity: "warning"
+        annotations:
+          summary: "Swaptimize daemon experiencing errors"
+          description: "Error rate: {{ $value }} errors/sec"
+
+      # Daemon down
+      - alert: SwaptimizeDaemonDown
+        expr: up{job="swaptimize"} == 0
+        for: 1m
+        labels:
+          severity: "critical"
+        annotations:
+          summary: "Swaptimize daemon is down"
+          description: "Swaptimize metrics endpoint is unreachable"
+
+      # High memory usage
+      - alert: HighMemoryUsage
+        expr: swaptimize_memory_usage_percent > 90
+        for: 10m
+        labels:
+          severity: "warning"
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is {{ $value }}%"
+
+      # Too many swap files
+      - alert: TooManySwapFiles
+        expr: (swaptimize_swap_files_created_total - swaptimize_swap_files_deleted_total) > 8
+        for: 5m
+        labels:
+          severity: "info"
+        annotations:
+          summary: "Many swap files active"
+          description: "{{ $value }} swap files are currently active"
+
+      # No swap available
+      - alert: NoSwapAvailable
+        expr: swaptimize_swap_available_bytes == 0
+        for: 1m
+        labels:
+          severity: "critical"
+        annotations:
+          summary: "No swap space available"
+          description: "System has no free swap space left!"

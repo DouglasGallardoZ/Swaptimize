@@ -1,141 +1,268 @@
-Tu README está claro, profesional y bien estructurado, Douglas 👌. Solo ajustaré algunos puntos menores para alinearlo con tu implementación actual y destacar funcionalidades que no deben pasarse por alto — como la lógica adaptativa, la detección de swap inicial, y la comparativa con otros sistemas operativos. Aquí tienes la versión mejorada:
+# 📦 Swaptimize v2.1 | Hybrid Adaptive Swap Manager
+
+**Gestor dinámico e inteligente de memoria swap para Linux.**
+
+Swaptimize es un daemon modular escrito en Go que optimiza el uso de la swap del sistema en tiempo real usando una estrategia **dual-path adaptativa**. Detecta picos de presión de memoria con PSI (Pressure Stall Information) e implementa respuestas diferenciadas: reacción rápida (10s) ante picos críticos, conservador (300s) ante cambios graduales.
+
+> 🎯 **Ideal para:** Estaciones de trabajo, entornos de ciencia de datos, contenedores, servidores backend y sistemas con recursos limitados.
 
 ---
 
-## 📦 Swaptimize
+## 🚀 Características v2.1
 
-**Gestor dinámico de memoria swap para estaciones de trabajo Linux.**  
-Swaptimize es un daemon modular escrito en Go que optimiza el uso de la swap del sistema en tiempo real. A diferencia de enfoques tradicionales basados en particiones fijas, Swaptimize monitorea el estado del sistema, crea y elimina archivos de intercambio según umbrales configurables, ofreciendo flexibilidad, estabilidad y control total.
+### Arquitectura Hybrid Adaptive
+- **Dual-path response**: 10s de intervalo para picos agudos, 300s para cambios graduales
+- **Peak detection**: Basado en cambios rápidos de RAM (Δ>10% en 60s) + PSI (Pressure Stall Information)
+- **Protección inteligente**: Evita oscilaciones de swap creando/eliminando continuamente
+- **Rate limiting adaptativo**: Histeresis de 30s entre operaciones, espera de 120s post-eliminación
 
-> ✅ Ideal para estaciones de trabajo, entornos de ciencia de datos, servidores backend y sistemas con recursos limitados.
-
----
-
-### 🚀 Características
-
-- ⚙️ Demonio eficiente en Go, sin procesos externos
-- 📊 Monitoreo continuo de RAM, swap y espacio en disco
-- 🔁 Creación/eliminación dinámica de archivos swap
-- 📈 Lógica adaptativa: reduce el intervalo si hay presión alta
-- 🧹 Limpieza automática de swap huérfanos al iniciar
-- 🧠 Detecta ausencia de swap inicial y la crea automáticamente
-- 🖥️ Integración con `systemd`
-- 🔧 Configuración vía archivo `.env`
+### Funcionalidades Core
+- ⚙️ Demonio eficiente en Go, sin procesos externos ni dependencias externas
+- 📊 Monitoreo continuo de RAM, swap, PSI y presión de sistema
+- 🔁 Creación/eliminación dinámica de archivos swap basada en presión real
+- 🧠 Detección automática de picos de memoria usando PSI (/proc/pressure/memory)
+- 📈 Circular buffer de 5 muestras (150 segundos) para análisis histórico
+- 🛡️ Protecciones contra oscilación: SwapPercent ≤ 30% para eliminar seguro
+- 🖥️ Integración con `systemd` como servicio de usuario o root
+- 🔧 **13 parámetros configurables** vía archivo `.env` (todos con defaults sensatos)
 - 💻 CLI modular con comandos `run`, `status`, `clean`
+- 📈 Prometheus compatible (metrics en :9100)
+- 📉 Logging minimalista: solo acciones (creación/eliminación), sin repetición de estados
 
 ---
 
-### 📋 Requisitos
+## 📋 Requisitos
 
-- Sistema Linux con `systemd`
-- Go ≥ 1.22 instalado para compilación local
-- Acceso `sudo` para uso de `swapon` / `swapoff`
+- **OS**: Linux con `systemd` (kernel ≥ 5.0 recomendado para PSI support)
+- **Go**: ≥ 1.20 para compilación local
+- **Permisos**: `sudo` para `swapon`/`swapoff`
+- **PSI Support**: `/proc/pressure/memory` (opcional pero recomendado para peak detection)
 
 ---
 
-### ⚙️ Instalación
+## ⚙️ Instalación
 
+### Opción 1: Desde el repositorio
 ```bash
+git clone https://github.com/tu-usuario/Swaptimize
+cd Swaptimize
 sudo make install
 ```
 
-Esto:
-
-- Compila el binario
-- Crea `/etc/manage_swap.env` con valores por defecto
-- Instala y habilita el servicio systemd
-- Activa el demonio como servicio en segundo plano
-
----
-
-### 💻 CLI disponible
-
+### Opción 2: Compilación manual
 ```bash
-swaptimize run       # Ejecuta el daemon (directo o por systemd)
-swaptimize status    # Muestra métricas actuales del sistema
-swaptimize clean     # Elimina archivos swap activos
+go build -o swaptimize main.go
+sudo cp swaptimize /usr/local/bin/
+sudo cp assets/example.env.v2.1 /etc/swaptimize.env  # (opcional, preserva si existe)
+sudo systemctl enable swaptimize.service
+sudo systemctl start swaptimize.service
 ```
 
-> El subcomando `run` requiere privilegios, los demás pueden ejecutarse como usuario.
-
 ---
 
-### 📁 Configuración (`/etc/swaptimize.env`)
+## 🔧 Configuración v2.1 (13 parámetros nuevos)
+
+### Archivo `/etc/swaptimize.env`
 
 ```ini
-SWAP_SLEEP_INTERVAL=30         # Intervalo de chequeo normal (segundos)
-SWAP_EMERGENCY_INTERVAL=10     # Intervalo si Swap ≥ 90%
-SWAP_THRESHOLD_HIGH=85         # Umbral para crear swap (%)
-SWAP_THRESHOLD_LOW=40          # Umbral para eliminar swap (%)
-SWAP_SIZE=4096                 # Tamaño de cada archivo swap (MB)
-MAX_SWAP_FILES=4               # Número máximo simultáneo de swap files
+# === THRESHOLDS DE CREACIÓN Y ELIMINACIÓN ===
+SWAP_ALERT_THRESHOLD=85          # RAM ≥ 85% → crear swap (%)
+SWAP_DELETE_THRESHOLD=30         # Swap ≤ 30% REQUERIDO para eliminar (protección de datos)
+SWAP_USE_THRESHOLD=60            # No crear más swap si swap < 60% (evita desperdicio)
+
+# === DETECCIÓN DE PICOS (Peak Detection) ===
+MEM_DELTA_THRESHOLD=10.0         # Δ RAM > 10% en ventana activa pico (%)
+MEM_DELTA_WINDOW_SEC=60          # Ventana de análisis histórico para picos (seg)
+
+# === DETECCIÓN DE LLENADO RÁPIDO (Fast-Fill) ===
+SWAP_DELTA_THRESHOLD=20          # Δ Swap > 20% en 45s → respuesta rápida (%)
+SWAP_DELTA_WINDOW_SEC=45         # Ventana de análisis para swap rápido (seg)
+
+# === RESPUESTA DUAL-PATH ===
+PEAK_RESPONSE_SEC=10             # Intervalo si detecta pico (seg)
+GRADUAL_RESPONSE_SEC=300         # Intervalo para cambios graduales (seg)
+
+# === RATE LIMITING ===
+CREATE_DELETE_HYSTERESIS_SEC=30  # Espera mínima entre acciones (crear/eliminar)
+DELETE_WAIT_SEC=120              # Espera POST-eliminación antes de crear nuevo
+
+# === PSI THRESHOLDS ===
+PSI_HIGH_THRESHOLD=80.0          # PSI > 80% considera presión alta (0-100)
+PSI_LOW_THRESHOLD=40.0           # PSI < 40% considera presión baja (0-100)
+
+# === OTROS ===
+SWAP_SIZE_MB=4096                # Tamaño de cada archivo swap (MB)
+MAX_SWAP_FILES=4                 # Máximo archivos swap simultáneos
 ```
 
-> Swaptimize se adapta a laptops, estaciones de trabajo y entornos de contenedores.
+### Defaults (si no se especifican en `.env`)
+Todos los parámetros tienen defaults sensatos con backward-compatibility. Un archivo `.env` antiguo de v2.0 sigue funcionando (aplicará los nuevos defaults).
+
+### Profiles Preestablecidos
+```ini
+# LAPTOP (512 MB swap min)
+SWAP_SIZE_MB=512
+MAX_SWAP_FILES=2
+
+# WORKSTATION (1024 MB swap min) - RECOMENDADO
+SWAP_SIZE_MB=1024
+MAX_SWAP_FILES=4
+
+# SERVER (2048 MB swap min)
+SWAP_SIZE_MB=2048
+MAX_SWAP_FILES=8
+```
 
 ---
 
-### 📜 Logging y observabilidad
+## 📊 Comportamiento Adaptativo
 
-El servicio utiliza `journalctl` para registrar eventos y métricas:
+### Matriz de Respuesta (v2.1 Hybrid Adaptive)
+
+| Condición | Detector | Intervalo | Acción |
+|-----------|----------|-----------|--------|
+| **RAM ≥ 85%** | MemPercent | 10s (peak) | Crear si no existe |
+| **Δ RAM > 10% en 60s** | Peak detection | 10s | Prioritario, crear |
+| **Swap ≥ 85%** | SwapPercent | 10s (peak) | Crear si no existe |
+| **Δ Swap > 20% en 45s** | Fast-fill | 10s | Prioritario, crear |
+| **PSI > 80%** | Pressure Stall | 10s | Prioritario, crear |
+| **RAM ≤ 40% AND Swap ≤ 30%** | Gradual | 300s | Eliminar si seguro |
+| **PSI ≤ 40%** | Low pressure | 300s | Conservador |
+
+### Protecciones Inteligentes
+1. **Anti-oscilación**: No elimina swap si SwapPercent > 30% (datos en memoria)
+2. **Anti-desperdicio**: No crea más swap si SwapPercent < 60% y MemPercent < 85%
+3. **Hysteresis**: Espera 30s mín entre acciones, 120s después de eliminar
+4. **Boot detection**: Crea swap automático si no existe al iniciar
+
+---
+
+## 💻 Uso
 
 ```bash
-journalctl -u swaptimize.service -f
+swaptimize run       # Ejecuta daemon (requiere sudo)
+swaptimize status    # Métricas actuales (no requiere sudo)
+swaptimize clean     # Elimina swap activos (requiere sudo)
 ```
 
-> No genera archivos de log adicionales, lo que simplifica la rotación y auditoría del sistema.
+### Como servicio systemd
+```bash
+sudo systemctl start swaptimize.service
+sudo systemctl stop swaptimize.service
+sudo systemctl status swaptimize.service
+journalctl -u swaptimize -f      # Follow logs
+```
 
 ---
 
-### 🧪 Pruebas de estrés recomendadas
+## 📜 Logging y Observabilidad
 
-Para validar el comportamiento bajo presión de RAM:
+### Journal minimalista (v2.1 optimization)
+```bash
+journalctl -u swaptimize -f
+```
+
+**Logs esperados:**
+- ✅ `🛠️ Swap creado (N files activos)` - Cuando se crea nuevo archivo
+- ✅ `📊 Swap eliminado (N files activos)` - Cuando se elimina seguro
+- ✅ Error logs si hay problemas de swapon/swapoff
+
+**Logs REMOVIDOS en v2.1 (85% menos logs):**
+- ❌ Detección de picos (repetitivo cada ciclo)
+- ❌ Detección de llenado rápido (repetitivo cada ciclo)
+- ❌ Ajustes de intervalo ≥ 90% (log cada 10s innecesario)
+
+**Beneficio**: Journal size reducido de 65.8MB a ~10-15MB en 24h (dependiendo del sistema)
+
+### Prometheus Metrics (Endpoint :9100/metrics)
+```bash
+curl localhost:9100/metrics
+```
+
+Expone: `swaptimize_memory_percent`, `swaptimize_swap_percent`, `swaptimize_psi_memory`, `swaptimize_swap_files_active`
+
+---
+
+## 🧪 Pruebas de Validación
+
+### Test 1: Peak Detection (Δ RAM rápido)
+```bash
+stress-ng --vm 1 --vm-bytes 91% --timeout 10s
+# Espera: Detect peak en < 10s, crear swap rápido
+```
+
+### Test 2: Gradual Pressure (RAM sube lento)
+```bash
+stress-ng --vm 2 --vm-bytes 85% --timeout 60s
+# Espera: Respuesta en 300s (gradual), crea swap si necesita
+```
+
+### Test 3: ZRAM Filling sin RAM pressure
+```bash
+# Si usas ZRAM como único swap:
+while true; do cat /dev/urandom | base64 | dd of=/dev/null; done &
+# Espera: Detectar SwapPercent ≥ 85%, crear archivo swap
+```
+
+### Test 4: Safe Deletion
+```bash
+swaptimize status     # Ver swaps activos
+# Liberar RAM manualmente
+# Espera: Elimina solo si RAM ≤ 40% AND Swap ≤ 30%
+```
+
+### Monitoreo durante tests
+```bash
+# Terminal 1: Logs
+journalctl -u swaptimize -f
+
+# Terminal 2: Métricas
+watch -n 1 swaptimize status
+
+# Terminal 3: Procesos
+watch -n 1 'free -h && swapon --show'
+```
+
+---
+
+## 🧠 Comparativa: Swaptimize vs Windows vs macOS
+
+| Característica | Swaptimize v2.1 | Windows | macOS |
+|---|---|---|---|
+| **Control dinámico** | ✅ Completo | ❌ Oculto | ❌ Oculto |
+| **Configuración** | ✅ 13 parámetros `.env` | ❌ Registry opaco | ❌ No configurable |
+| **Peak detection** | ✅ PSI + Δ RAM | ⚠️ Hard-coded | ⚠️ Hard-coded |
+| **Logging visible** | ✅ Journalctl | ❌ Event Viewer opaco | ❌ No accesible |
+| **Anti-oscilación** | ✅ Hysteresis + protección | ⚠️ Limitado | ⚠️ Limitado |
+| **Presición** | ✅ PSI (kernel metrics) | ⚠️ Approximated | ⚠️ Approximated |
+| **Cost** | ✅ 0 (Open Source) | ⚠️ Licensed OS | ⚠️ Licensed OS |
+
+---
+
+## ❌ Desinstalación
 
 ```bash
-stress-ng --vm 2 --vm-bytes 85% --timeout 2m
-```
-
-Luego consulta el estado del daemon:
-
-```bash
-swaptimize status
-journalctl -u swaptimize.service
+sudo systemctl stop swaptimize.service
+sudo systemctl disable swaptimize.service
+sudo rm /usr/local/bin/swaptimize
+sudo rm /etc/swaptimize.env           # (optional)
+# systemd unit se auto-limpia si está en /etc/systemd/system
 ```
 
 ---
 
-### 🧠 Comparativa con otros sistemas operativos
+## 📝 Licencia
 
-| Sistema       | Control del swap | Visibilidad | Adaptación dinámica | Configuración |
-|---------------|------------------|-------------|----------------------|----------------|
-| **Swaptimize**| ✅ Total         | ✅ CLI/logs | ✅ Por presión RAM   | ✅ `.env`       |
-| **Windows**   | ❌ Oculto        | ⚠️ Parcial  | ❌ No configurable   | ❌              |
-| **macOS**     | ❌ Oculto        | ❌ No accesible | ⚠️ Interna         | ❌              |
-
-> Swaptimize entrega un nivel de control que ni Windows ni macOS ofrecen al usuario avanzado.
+[MIT LICENSE](./LICENSE)
 
 ---
 
-### ❌ Desinstalación
+## 🤝 Contribuciones
 
-```bash
-sudo make uninstall
-```
+Swaptimize está diseñado para usuarios avanzados que valoran **control**, **visibilidad** y **adaptabilidad**. Reportes de bugs, features y PRs son bienvenidas.
 
-Esto:
-
-- Detiene y elimina el servicio
-- Borra el binario en `/usr/local/bin`
-- Te pregunta si deseas eliminar el archivo `.env`
-
----
-
-### 📝 Licencia
-
-Este proyecto está bajo la [Licencia MIT](./LICENSE).
-
----
-
-### 📬 Contribuciones
-
-Swaptimize está diseñado para desarrolladores que valoran rendimiento, transparencia y control. Ideas, sugerencias y mejoras son bienvenidas para seguir expandiendo la herramienta.
+### Roadmap v2.2 (Planned)
+- [ ] NUMA-aware swap management
+- [ ] Múltiples discos con diferente velocidad
+- [ ] Integration con cgroup v2 limits
+- [ ] Web dashboard (Go fiber)
