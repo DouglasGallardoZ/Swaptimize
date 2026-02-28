@@ -183,6 +183,62 @@ Expone: `swaptimize_memory_percent`, `swaptimize_swap_percent`, `swaptimize_psi_
 
 ---
 
+## 📦 Soporte para Filesystems
+
+### Btrfs (Full Support ✅)
+
+Swaptimize v2.1 incluye soporte completo y optimizado para **Btrfs**, el moderno filesystem de Linux con compresión y snapshots.
+
+**Consideración especial**: Btrfs usa **Copy-on-Write (COW)** por defecto, lo que causa problemas críticos con archivos swap:
+- **Corrupción de datos** en el archivo swap
+- **Deadlocks** del kernel durante presión de memoria
+- **Rendimiento degradado** por overhead de COW
+
+**Solución implementada en Swaptimize**: 
+1. ✅ **Detección automática** del filesystem (btrfs, ext4, xfs, etc)
+2. ✅ **Deshabilitación de COW** antes de activar swap con `chattr +C`
+3. ✅ **Buffer aumentado** (3x vs 2x) para validación de espacio
+4. ✅ **Logging detallado** de manejo btrfs
+
+#### Flujo de creación de swap en btrfs:
+```
+fallocate(4GB)        → Asigna bloques físicos
+    ↓
+chattr +C            → DESHABILITA COW para este archivo
+    ↓
+mkswap               → Prepara como swap (COW ya deshabilitado)
+    ↓
+swapon               → Activa (seguro, sin riesgos COW)
+```
+
+#### Requisitos:
+- El comando `chattr` debe estar disponible (incluido en `e2fsprogs`)
+- Kernel ≥ 4.14 con soporte completo para atributos btrfs
+
+#### Test de btrfs:
+```bash
+# Verificar que estás en btrfs
+df -T /var/lib/swaptimize
+
+# Al iniciar swaptimize, verás en logs:
+# 📋 Filesystem detected: btrfs at /var/lib
+# ⚠️ Special btrfs handling enabled:
+#   • COW (Copy-on-Write) will be disabled for swap files
+
+# Verificar que COW fue deshabilitado:
+lsattr /var/lib/swaptimize/swap-* | grep -c "C"  # Debe mostrar archivos con C
+```
+
+### Otros Filesystems (Full Support ✅)
+
+Swaptimize soporta completamente:
+- **ext4** / ext3 / ext2: Full support
+- **XFS**: Full support
+- **F2FS**: Full support
+- Cualquier filesystem Linux estándar
+
+---
+
 ## 🧪 Pruebas de Validación
 
 ### Test 1: Peak Detection (Δ RAM rápido)

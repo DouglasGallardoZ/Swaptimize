@@ -23,6 +23,14 @@ func ValidateSwapCreation(swapPath string, sizeMB int) *ValidationResult {
 		BufferRequired: uint64(sizeMB) * 1024 * 1024 * 2, // 2x buffer
 	}
 
+	// Detectar filesystem para validaciones específicas
+	fsInfo, _ := DetectFilesystem("/var/lib")
+
+	// Para btrfs, requerir más buffer debido a metadatos de COW
+	if fsInfo != nil && fsInfo.IsBtrfs() {
+		result.BufferRequired = uint64(sizeMB) * 1024 * 1024 * 3 // 3x buffer for btrfs safety
+	}
+
 	// Obtener uso de disco de la partición where swapPath lives
 	diskUsage, err := disk.Usage("/var/lib/swaptimize")
 	if err != nil {
@@ -37,13 +45,22 @@ func ValidateSwapCreation(swapPath string, sizeMB int) *ValidationResult {
 
 	result.Available = diskUsage.Free
 
-	// Verificar espacio: necesitamos 2x (safety margin)
+	// Verificar espacio: necesitamos buffer (2x o 3x según filesystem)
 	if result.Available < result.BufferRequired {
 		result.CanCreate = false
+		bufferMB := result.BufferRequired / (1024 * 1024)
+		availMB := result.Available / (1024 * 1024)
+		
+		fsLabel := ""
+		if fsInfo != nil && fsInfo.IsBtrfs() {
+			fsLabel = " (btrfs requires 3x for COW metadata) "
+		}
+		
 		result.Message = fmt.Sprintf(
-			"Insufficient disk space: need %dMB (2x safety), have %dMB",
-			result.BufferRequired/(1024*1024),
-			result.Available/(1024*1024),
+			"Insufficient disk space%s: need %dMB, have %dMB",
+			fsLabel,
+			bufferMB,
+			availMB,
 		)
 		log.Printf("⚠️  %s\n", result.Message)
 		return result

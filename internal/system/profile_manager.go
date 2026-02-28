@@ -123,6 +123,12 @@ func (pm *ProfileManager) LogConfiguration() {
 	log.Printf("║ Recommendation: %-44s║\n", env.Recommendation)
 	log.Printf("║ ZSWAP Available: %v%-40s║\n", env.HasZSWAP, "")
 	log.Printf("║ ZRAM Available: %v%-41s║\n", env.HasZRAM, "")
+	if env.Filesystem != nil {
+		log.Printf("║ Filesystem: %-48s║\n", string(env.Filesystem.Type))
+		if env.Filesystem.IsBtrfs() {
+			log.Printf("║ Btrfs Support: %-44s║\n", "COW Disabled")
+		}
+	}
 	log.Println("╠════════════════════════════════════════════════════════════╣")
 	log.Printf("║ Profile Selected: %-42s║\n", profile.Name)
 	log.Printf("║ Mode: %-55s║\n", pm.GetModeDescription())

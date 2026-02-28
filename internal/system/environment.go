@@ -29,6 +29,7 @@ type SwapEnvironment struct {
 	ZSWAPCompress   string // Compresor usado (zstd, lz4, etc)
 	ZSWAPPoolPct    int    // Porcentaje de memoria pool usado
 	Recommendation  string // Recomendación de comportamiento
+	Filesystem      *FilesystemInfo // Información del filesystem donde se crearán swaps
 }
 
 // ExistingSwapInfo contiene info de un swap existente
@@ -46,7 +47,16 @@ func DetectEnvironment() (*SwapEnvironment, error) {
 		ExistingSwaps: make([]ExistingSwapInfo, 0),
 	}
 
-	// 1. Detectar ZSWAP
+	// 1. Detectar filesystem (donde se creará /var/lib/swaptimize)
+	fsInfo, err := DetectFilesystem("/var/lib")
+	if err != nil {
+		log.Printf("⚠️  Error detecting filesystem: %v\n", err)
+	} else {
+		env.Filesystem = fsInfo
+		LogFilesystemInfo(fsInfo)
+	}
+
+	// 2. Detectar ZSWAP
 	zswapEnabled := CheckZSWAPEnabled()
 	env.HasZSWAP = zswapEnabled
 	if zswapEnabled {
@@ -56,14 +66,14 @@ func DetectEnvironment() (*SwapEnvironment, error) {
 			env.ZSWAPCompress, env.ZSWAPPoolPct)
 	}
 
-	// 2. Detectar ZRAM
+	// 3. Detectar ZRAM
 	zramEnabled := CheckZRAMEnabled()
 	env.HasZRAM = zramEnabled
 	if zramEnabled {
 		log.Println("✓ ZRAM detected: enabled")
 	}
 
-	// 3. Detectar swaps existentes (no creados por Swaptimize)
+	// 4. Detectar swaps existentes (no creados por Swaptimize)
 	existingSwaps, err := GetExistingSwaps()
 	if err != nil {
 		log.Printf("⚠️ Error detecting existing swaps: %v\n", err)
@@ -77,7 +87,7 @@ func DetectEnvironment() (*SwapEnvironment, error) {
 		}
 	}
 
-	// 4. Calcular recomendación
+	// 5. Calcular recomendación
 	env.Type = DetermineEnvironmentType(env)
 	env.Recommendation = GenerateRecommendation(env)
 
